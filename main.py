@@ -73,6 +73,12 @@ def calculate_cov_matrix_corr_matrix():
             cov_matrix[i][j] = cov_matrix[j][i]
             corr_matrix[i][j] = corr_matrix[j][i]
 
+    cov_matrix_data = pd.DataFrame(cov_matrix)
+    cov_matrix_data.to_csv("calculated_data/cov_matrix_T.csv")
+
+    corr_matrix_data = pd.DataFrame(corr_matrix)
+    corr_matrix_data.to_csv("calculated_data/corr_matrix_R.csv")
+
     return cov_matrix, corr_matrix
 
 
@@ -97,6 +103,9 @@ def calculate_WMD(corr_matrix):
         for j in range(0, i):
             WMD[i][j] = WMD[j][i]
 
+    WMD_data = pd.DataFrame(WMD)
+    WMD_data.to_csv("calculated_data/WMD_matrix")
+
     return WMD
 
 
@@ -116,7 +125,7 @@ def calculate_similarity_matrix(WMD, k=3, z=3):
             k_nn[i][idx_neighbor] = 1
 
     knn_data = pd.DataFrame(k_nn)
-    knn_data.to_csv("k_nn_datafile.csv")
+    knn_data.to_csv("calculated_data/k_nn_data.csv")
 
     # for i in range(0, N):
     #     for j in range(i + 1, N):
@@ -134,23 +143,14 @@ def calculate_similarity_matrix(WMD, k=3, z=3):
 
     similarity_matrix_data = pd.DataFrame(similarity_matrix)
 
-    similarity_matrix_data.to_csv("similarity_matrix_data.csv")
+    similarity_matrix_data.to_csv("calculated_data/similarity_matrix.csv")
 
 
 matrices = calculate_cov_matrix_corr_matrix()
-
-print("Calculated T and R")
 
 cov_matrix_T = matrices[0]
 corr_matrix_R = matrices[1]
 
 WMD_matrix = calculate_WMD(corr_matrix_R)
 
-print("Calculated WMD")
-
 calculate_similarity_matrix(WMD_matrix, 3)
-
-print("Done")
-
-
-# print(np.array(DATA.loc[[1]]))
