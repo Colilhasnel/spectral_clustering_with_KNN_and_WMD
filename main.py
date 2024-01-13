@@ -104,7 +104,7 @@ def calculate_WMD(corr_matrix):
             WMD[i][j] = WMD[j][i]
 
     WMD_data = pd.DataFrame(WMD)
-    WMD_data.to_csv("calculated_data/WMD_matrix")
+    WMD_data.to_csv("calculated_data/WMD_matrix.csv")
 
     return WMD
 
@@ -145,6 +145,34 @@ def calculate_similarity_matrix(WMD, k=3, z=3):
 
     similarity_matrix_data.to_csv("calculated_data/similarity_matrix.csv")
 
+    return similarity_matrix
+
+
+def calculate_diagonal_matrix(W):
+    D = np.zeros((N, N), dtype=np.float64)
+
+    for i in range(0, N):
+        D[i][i] = np.sum(W[i])
+
+    D_data = pd.DataFrame(D)
+    D_data.to_csv("calculated_data/diagonal_matrix.csv")
+
+    return D
+
+
+def calculate_regularized_laplacian_matrix(W, D):
+    laplaican_matrix_L = D - W
+
+    D_inv_sqrt = np.linalg.inv(D ** (1 / 2))
+
+    regularized_L = np.dot(laplaican_matrix_L, D_inv_sqrt)
+    regularized_L = np.dot(D_inv_sqrt, regularized_L)
+
+    regularized_L_data = pd.DataFrame(regularized_L)
+    regularized_L_data.to_csv("calculated_data/regularized_laplacian_matrix.csv")
+
+    return regularized_L
+
 
 matrices = calculate_cov_matrix_corr_matrix()
 
@@ -153,4 +181,12 @@ corr_matrix_R = matrices[1]
 
 WMD_matrix = calculate_WMD(corr_matrix_R)
 
-calculate_similarity_matrix(WMD_matrix, 3)
+similarity_matrix_W = calculate_similarity_matrix(WMD_matrix, 3)
+
+diagonal_matrix_D = calculate_diagonal_matrix(similarity_matrix_W)
+
+regularized_laplacian_matrix_L = calculate_regularized_laplacian_matrix(
+    similarity_matrix_W, diagonal_matrix_D
+)
+
+print("Done")
