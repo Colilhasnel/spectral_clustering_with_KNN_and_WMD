@@ -52,34 +52,15 @@ STANDARD_DEVIATION = DATA.std()
 VARIABLES = list(DATA.columns)
 
 
-def calculate_cov_matrix_corr_matrix():
-    cov_matrix = np.zeros((P, P), dtype=np.float64)
+def calculate_corr_matrix():
+    data = np.array(DATA)
 
-    corr_matrix = np.zeros((P, P), dtype=np.float64)
-
-    for i in range(0, P):
-        pi = VARIABLES[i]
-        for j in range(i, P):
-            pj = VARIABLES[j]
-            for k in range(0, N):
-                cov_matrix[i][j] += (DATA[pi][k] - MEAN[pi]) * (DATA[pj][k] - MEAN[pi])
-            cov_matrix[i][j] = cov_matrix[i][j] / (N - 1)
-            corr_matrix[i][j] = cov_matrix[i][j] / (
-                STANDARD_DEVIATION[pi] * STANDARD_DEVIATION[pj]
-            )
-
-    for i in range(0, P):
-        for j in range(0, i):
-            cov_matrix[i][j] = cov_matrix[j][i]
-            corr_matrix[i][j] = corr_matrix[j][i]
-
-    cov_matrix_data = pd.DataFrame(cov_matrix)
-    cov_matrix_data.to_csv("calculated_data/cov_matrix_T.csv")
+    corr_matrix = np.corrcoef(data, rowvar=False)
 
     corr_matrix_data = pd.DataFrame(corr_matrix)
     corr_matrix_data.to_csv("calculated_data/corr_matrix_R.csv")
 
-    return cov_matrix, corr_matrix
+    return corr_matrix
 
 
 def calculate_WMD(corr_matrix):
@@ -149,10 +130,7 @@ def calculate_similarity_matrix(WMD, k=3, z=3):
 
 
 def calculate_diagonal_matrix(W):
-    D = np.zeros((N, N), dtype=np.float64)
-
-    for i in range(0, N):
-        D[i][i] = np.sum(W[i])
+    D = np.diag(W.sum(axis=1))
 
     D_data = pd.DataFrame(D)
     D_data.to_csv("calculated_data/diagonal_matrix.csv")
@@ -174,10 +152,7 @@ def calculate_regularized_laplacian_matrix(W, D):
     return regularized_L
 
 
-matrices = calculate_cov_matrix_corr_matrix()
-
-cov_matrix_T = matrices[0]
-corr_matrix_R = matrices[1]
+corr_matrix_R = calculate_corr_matrix()
 
 WMD_matrix = calculate_WMD(corr_matrix_R)
 
