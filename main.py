@@ -163,8 +163,8 @@ similarity_matrix_W = calculate_similarity_matrix(WMD_matrix, 3)
 
 diagonal_matrix_D = calculate_diagonal_matrix(similarity_matrix_W)
 
-# regularized_laplacian_matrix_L = calculate_regularized_laplacian_matrix(
-#     similarity_matrix_W, diagonal_matrix_D
-# )
+regularized_laplacian_matrix_L = calculate_regularized_laplacian_matrix(
+    similarity_matrix_W, diagonal_matrix_D
+)
 
 print("Done")
