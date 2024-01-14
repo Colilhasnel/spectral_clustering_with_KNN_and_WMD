@@ -172,6 +172,33 @@ def calculate_regularized_laplacian_matrix(matrix_name, W, D):
     return regularized_L
 
 
+def calculate_k_smallest_eigenvectors(matrix_name, eigenvalues, eigenvectors, k):
+    matrix_name = str(k) + "_" + matrix_name
+
+    k_smallest_eig_V = []
+
+    if data_storred.check_data(matrix_name):
+        k_smallest_eig_V = data_storred.get_data(matrix_name)
+    else:
+        indexes = []
+        for i in range(0, k):
+            min_element = min(eigenvalues)
+            print(min_element)
+            idx = np.where(eigenvalues == min_element)[0][0]
+            indexes.append(idx)
+
+            eigenvalues[idx] = math.inf
+            k_smallest_eig_V.append(eigenvectors[:, idx])
+
+        k_smallest_eig_V = np.array(k_smallest_eig_V, dtype=np.float64)
+        k_smallest_eig_V = np.transpose(k_smallest_eig_V)
+
+        eig_V_data = pd.DataFrame(k_smallest_eig_V)
+        eig_V_data.to_csv("calculated_data/" + matrix_name)
+
+    return k_smallest_eig_V
+
+
 corr_matrix_R = calculate_corr_matrix("corr_matrix_R.csv")
 
 WMD_matrix = calculate_WMD("WMD_matrix.csv", corr_matrix_R)
@@ -186,6 +213,12 @@ diagonal_matrix_D = calculate_diagonal_matrix(
 
 regularized_laplacian_matrix_L = calculate_regularized_laplacian_matrix(
     "regularized_laplacian_matrix_L.csv", similarity_matrix_W, diagonal_matrix_D
+)
+
+eigenvalues_L, eigenvectors_L = np.linalg.eigh(regularized_laplacian_matrix_L)
+
+eigenvectors_P = calculate_k_smallest_eigenvectors(
+    "eigenvector_matrix_P.csv", eigenvalues_L, eigenvectors_L, 3
 )
 
 print("Done")
