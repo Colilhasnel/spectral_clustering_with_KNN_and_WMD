@@ -130,7 +130,10 @@ def calculate_similarity_matrix(WMD, k=3, z=3):
 
 
 def calculate_diagonal_matrix(W):
+    regularization_term = 1e-5
+
     D = np.diag(W.sum(axis=1))
+    D = D + np.eye(D.shape[0]) * regularization_term
 
     D_data = pd.DataFrame(D)
     D_data.to_csv("calculated_data/diagonal_matrix.csv")
@@ -160,8 +163,8 @@ similarity_matrix_W = calculate_similarity_matrix(WMD_matrix, 3)
 
 diagonal_matrix_D = calculate_diagonal_matrix(similarity_matrix_W)
 
-regularized_laplacian_matrix_L = calculate_regularized_laplacian_matrix(
-    similarity_matrix_W, diagonal_matrix_D
-)
+# regularized_laplacian_matrix_L = calculate_regularized_laplacian_matrix(
+#     similarity_matrix_W, diagonal_matrix_D
+# )
 
 print("Done")
