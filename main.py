@@ -4,6 +4,7 @@ import pandas as pd
 import math
 import get_calculated_data as data_storred
 from sklearn.cluster import KMeans
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 
 DATA = pd.read_csv("newDATAset_spectral_clustering.dat", delimiter="\s+")
@@ -225,14 +226,12 @@ eigenvectors_P = calculate_k_smallest_eigenvectors(
 
 X = eigenvectors_P
 
-sse = []
-for k in range(1, 11):
-    km = KMeans(n_clusters=k, random_state=2)
-    km.fit(X)
-    sse.append(km.inertia_)
+kmeans = KMeans(n_clusters=4, random_state=2)
+kmeans.fit(X)
 
-plt.plot(range(1, 11), sse)
-plt.title("Elbow Method")
-plt.xlabel("Number of clusters (k)")
-plt.ylabel("Sum Squared Error")
-plt.show()
+print(kmeans.cluster_centers_)
+
+pred = kmeans.fit_predict(X)
+
+cluster_prediction_data = pd.DataFrame(pred)
+cluster_prediction_data.to_csv("calculated_data/cluster_prediction.csv")
