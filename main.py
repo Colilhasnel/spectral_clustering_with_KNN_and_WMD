@@ -53,8 +53,7 @@ STANDARD_DEVIATION = DATA.std()
 VARIABLES = list(DATA.columns)
 
 
-def calculate_corr_matrix():
-    matrix_name = "corr_matrix_R.csv"
+def calculate_corr_matrix(matrix_name):
     corr_matrix = []
 
     if data_storred.check_data(matrix_name):
@@ -70,108 +69,123 @@ def calculate_corr_matrix():
     return corr_matrix
 
 
-def calculate_WMD(corr_matrix):
+def calculate_WMD(matrix_name, corr_matrix):
     WMD = np.zeros((N, N), dtype=np.float64)
 
-    for i in range(0, N):
-        for j in range(i, N):
-            X = np.array(DATA.loc[i])
-            Y = np.array(DATA.loc[j])
+    if data_storred.check_data(matrix_name):
+        WMD = data_storred.get_data(matrix_name)
+    else:
+        for i in range(0, N):
+            for j in range(i, N):
+                X = np.array(DATA.loc[i])
+                Y = np.array(DATA.loc[j])
 
-            X = np.transpose(X)
-            Y = np.transpose(Y)
+                X = np.transpose(X)
+                Y = np.transpose(Y)
 
-            ans = np.dot(corr_matrix, X - Y)
-            ans = np.dot(np.transpose(X - Y), ans)
-            ans = math.sqrt(ans)
+                ans = np.dot(corr_matrix, X - Y)
+                ans = np.dot(np.transpose(X - Y), ans)
+                ans = math.sqrt(ans)
 
-            WMD[i][j] = ans
+                WMD[i][j] = ans
 
-    for i in range(0, N):
-        for j in range(0, i):
-            WMD[i][j] = WMD[j][i]
+        for i in range(0, N):
+            for j in range(0, i):
+                WMD[i][j] = WMD[j][i]
 
-    WMD_data = pd.DataFrame(WMD)
-    WMD_data.to_csv("calculated_data/WMD_matrix.csv")
+        WMD_data = pd.DataFrame(WMD)
+        WMD_data.to_csv("calculated_data/WMD_matrix.csv")
 
     return WMD
 
 
-def calculate_similarity_matrix(WMD, k=3, z=3):
-    k_nn = np.zeros((N, N), dtype=np.bool_)
-
-    for i in range(0, N):
-        neighbor_WMD = WMD[i].copy()
-        neighbor_WMD[i] = math.inf
-
-        for j in range(0, k):
-            min_WMD = min(neighbor_WMD)
-
-            idx_neighbor = np.where(neighbor_WMD == min_WMD)[0][0]
-            neighbor_WMD[idx_neighbor] = math.inf
-
-            k_nn[i][idx_neighbor] = 1
-
-    knn_data = pd.DataFrame(k_nn)
-    knn_data.to_csv("calculated_data/k_nn_data.csv")
-
-    # for i in range(0, N):
-    #     for j in range(i + 1, N):
-    #         if k_nn[i][j] and k_nn[j][i]:
-    #             print((i, j))
-
+def calculate_similarity_matrix(matrix_name, WMD, k=3, z=3):
     similarity_matrix = np.zeros((N, N), dtype=np.float64)
 
-    for i in range(0, N):
-        for j in range(i, N):
-            if k_nn[i][j] and k_nn[j][i]:
-                coeff = (WMD[i][j] ** 2) / (2 * z)
-                similarity_matrix[i][j] = math.exp(-coeff)
-                similarity_matrix[j][i] = similarity_matrix[i][j]
+    if data_storred.check_data(matrix_name):
+        similarity_matrix = data_storred.get_data(matrix_name)
+    else:
+        k_nn = np.zeros((N, N), dtype=np.bool_)
 
-    similarity_matrix_data = pd.DataFrame(similarity_matrix)
+        for i in range(0, N):
+            neighbor_WMD = WMD[i].copy()
+            neighbor_WMD[i] = math.inf
 
-    similarity_matrix_data.to_csv("calculated_data/similarity_matrix.csv")
+            for j in range(0, k):
+                min_WMD = min(neighbor_WMD)
+
+                idx_neighbor = np.where(neighbor_WMD == min_WMD)[0][0]
+                neighbor_WMD[idx_neighbor] = math.inf
+
+                k_nn[i][idx_neighbor] = 1
+
+        knn_data = pd.DataFrame(k_nn)
+        knn_data.to_csv("calculated_data/k_nn_data.csv")
+
+        for i in range(0, N):
+            for j in range(i, N):
+                if k_nn[i][j] and k_nn[j][i]:
+                    coeff = (WMD[i][j] ** 2) / (2 * z)
+                    similarity_matrix[i][j] = math.exp(-coeff)
+                    similarity_matrix[j][i] = similarity_matrix[i][j]
+
+        similarity_matrix_data = pd.DataFrame(similarity_matrix)
+
+        similarity_matrix_data.to_csv("calculated_data/similarity_matrix.csv")
 
     return similarity_matrix
 
 
-def calculate_diagonal_matrix(W):
-    regularization_term = 1e-5
+def calculate_diagonal_matrix(matrix_name, W):
+    D = []
 
-    D = np.diag(W.sum(axis=1))
-    D = D + np.eye(D.shape[0]) * regularization_term
+    if data_storred.check_data(matrix_name):
+        D = data_storred.get_data(matrix_name)
+    else:
+        regularization_term = 1e-5
 
-    D_data = pd.DataFrame(D)
-    D_data.to_csv("calculated_data/diagonal_matrix.csv")
+        D = np.diag(W.sum(axis=1))
+        D = D + np.eye(D.shape[0]) * regularization_term
+
+        D_data = pd.DataFrame(D)
+        D_data.to_csv("calculated_data/diagonal_matrix.csv")
 
     return D
 
 
-def calculate_regularized_laplacian_matrix(W, D):
-    laplaican_matrix_L = D - W
+def calculate_regularized_laplacian_matrix(matrix_name, W, D):
+    regularized_L = []
 
-    D_inv_sqrt = np.linalg.inv(D ** (1 / 2))
+    if data_storred.check_data(matrix_name):
+        regularized_L = data_storred.get_data(matrix_name)
+    else:
+        laplaican_matrix_L = D - W
 
-    regularized_L = np.dot(laplaican_matrix_L, D_inv_sqrt)
-    regularized_L = np.dot(D_inv_sqrt, regularized_L)
+        D_inv_sqrt = np.linalg.inv(D ** (1 / 2))
 
-    regularized_L_data = pd.DataFrame(regularized_L)
-    regularized_L_data.to_csv("calculated_data/regularized_laplacian_matrix.csv")
+        regularized_L = np.dot(laplaican_matrix_L, D_inv_sqrt)
+        regularized_L = np.dot(D_inv_sqrt, regularized_L)
+
+        regularized_L_data = pd.DataFrame(regularized_L)
+        regularized_L_data.to_csv("calculated_data/regularized_laplacian_matrix.csv")
 
     return regularized_L
 
 
-corr_matrix_R = calculate_corr_matrix()
+corr_matrix_R = calculate_corr_matrix("corr_matrix_R.csv")
 
-WMD_matrix = calculate_WMD(corr_matrix_R)
+WMD_matrix = calculate_WMD("WMD_matrix.csv", corr_matrix_R)
 
-similarity_matrix_W = calculate_similarity_matrix(WMD_matrix, 3)
+similarity_matrix_W = calculate_similarity_matrix(
+    "similarity_matrix_W.csv", WMD_matrix, 3
+)
 
-diagonal_matrix_D = calculate_diagonal_matrix(similarity_matrix_W)
+diagonal_matrix_D = calculate_diagonal_matrix(
+    "diagonal_matrix_D.csv", similarity_matrix_W
+)
 
 regularized_laplacian_matrix_L = calculate_regularized_laplacian_matrix(
-    similarity_matrix_W, diagonal_matrix_D
+    "regularized_laplacian_matrix_L.csv", similarity_matrix_W, diagonal_matrix_D
 )
 
 print("Done")
