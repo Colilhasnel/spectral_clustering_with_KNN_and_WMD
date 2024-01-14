@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import math
+import get_calculated_data as data_storred
 
 DATA = pd.read_csv("newDATAset_spectral_clustering.dat", delimiter="\s+")
 
@@ -53,12 +54,18 @@ VARIABLES = list(DATA.columns)
 
 
 def calculate_corr_matrix():
-    data = np.array(DATA)
+    matrix_name = "corr_matrix_R.csv"
+    corr_matrix = []
 
-    corr_matrix = np.corrcoef(data, rowvar=False)
+    if data_storred.check_data(matrix_name):
+        corr_matrix = data_storred.get_data(matrix_name)
+    else:
+        data = np.array(DATA)
 
-    corr_matrix_data = pd.DataFrame(corr_matrix)
-    corr_matrix_data.to_csv("calculated_data/corr_matrix_R.csv")
+        corr_matrix = np.corrcoef(data, rowvar=False)
+
+        corr_matrix_data = pd.DataFrame(corr_matrix)
+        corr_matrix_data.to_csv("calculated_data/corr_matrix_R.csv")
 
     return corr_matrix
 
