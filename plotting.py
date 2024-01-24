@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-DATA = pd.read_csv("newDATAset_spectral_clustering.dat", delimiter="\s+")
+DATA = pd.read_csv("newdataset_spectral_clustering.dat", delimiter="\s+")
 
 DATA.columns = DATA.columns.str.strip()
 DATA.replace([np.inf, -np.inf], np.nan, inplace=True)
@@ -58,4 +58,4 @@ def plot_clusters(variable_1, variable_2, labels_file, k):
     plt.show()
 
 
-plot_clusters(VARIABLES[9], VARIABLES[2], "calculated_data/cluster_prediction.csv", 3)
+plot_clusters(VARIABLES[0], VARIABLES[-4], "calculated_data/cluster_prediction.csv", 3)

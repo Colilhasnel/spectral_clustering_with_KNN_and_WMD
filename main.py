@@ -4,8 +4,7 @@ import pandas as pd
 import math
 import get_calculated_data as data_storred
 from sklearn.cluster import KMeans
-import matplotlib.cm as cm
-import matplotlib.pyplot as plt
+
 
 DATA = pd.read_csv("newDATAset_spectral_clustering.dat", delimiter="\s+")
 
@@ -55,11 +54,13 @@ STANDARD_DEVIATION = DATA.std()
 
 VARIABLES = list(DATA.columns)
 
+DATA_STATE = True
 
-def calculate_corr_matrix(matrix_name):
+
+def calculate_corr_matrix(matrix_name, get_data):
     corr_matrix = []
 
-    if data_storred.check_data(matrix_name):
+    if get_data and data_storred.check_data(matrix_name):
         corr_matrix = data_storred.get_data(matrix_name)
     else:
         data = np.array(DATA)
@@ -67,15 +68,15 @@ def calculate_corr_matrix(matrix_name):
         corr_matrix = np.corrcoef(data, rowvar=False)
 
         corr_matrix_data = pd.DataFrame(corr_matrix)
-        corr_matrix_data.to_csv("calculated_data/corr_matrix_R.csv")
+        corr_matrix_data.to_csv(os.path.join("calculated_data", matrix_name))
 
     return corr_matrix
 
 
-def calculate_WMD(matrix_name, corr_matrix):
+def calculate_WMD(matrix_name, corr_matrix, get_data):
     WMD = np.zeros((N, N), dtype=np.float64)
 
-    if data_storred.check_data(matrix_name):
+    if get_data and data_storred.check_data(matrix_name):
         WMD = data_storred.get_data(matrix_name)
     else:
         for i in range(0, N):
@@ -97,15 +98,15 @@ def calculate_WMD(matrix_name, corr_matrix):
                 WMD[i][j] = WMD[j][i]
 
         WMD_data = pd.DataFrame(WMD)
-        WMD_data.to_csv("calculated_data/WMD_matrix.csv")
+        WMD_data.to_csv(os.path.join("calculated_data", matrix_name))
 
     return WMD
 
 
-def calculate_similarity_matrix(matrix_name, WMD, k=3, z=3):
+def calculate_similarity_matrix(matrix_name, WMD, get_data, k=3, z=3):
     similarity_matrix = np.zeros((N, N), dtype=np.float64)
 
-    if data_storred.check_data(matrix_name):
+    if get_data and data_storred.check_data(matrix_name):
         similarity_matrix = data_storred.get_data(matrix_name)
     else:
         k_nn = np.zeros((N, N), dtype=np.bool_)
@@ -115,7 +116,7 @@ def calculate_similarity_matrix(matrix_name, WMD, k=3, z=3):
             neighbor_WMD[i] = math.inf
 
             for j in range(0, k):
-                min_WMD = min(neighbor_WMD)
+                min_WMD = np.amin(neighbor_WMD)
 
                 idx_neighbor = np.where(neighbor_WMD == min_WMD)[0][0]
                 neighbor_WMD[idx_neighbor] = math.inf
@@ -123,7 +124,7 @@ def calculate_similarity_matrix(matrix_name, WMD, k=3, z=3):
                 k_nn[i][idx_neighbor] = 1
 
         knn_data = pd.DataFrame(k_nn)
-        knn_data.to_csv("calculated_data/k_nn_data.csv")
+        knn_data.to_csv(os.path.join("calculated_data", matrix_name))
 
         for i in range(0, N):
             for j in range(i, N):
@@ -134,32 +135,32 @@ def calculate_similarity_matrix(matrix_name, WMD, k=3, z=3):
 
         similarity_matrix_data = pd.DataFrame(similarity_matrix)
 
-        similarity_matrix_data.to_csv("calculated_data/similarity_matrix.csv")
+        similarity_matrix_data.to_csv(os.path.join("calculated_data", matrix_name))
 
     return similarity_matrix
 
 
-def calculate_diagonal_matrix(matrix_name, W):
+def calculate_diagonal_matrix(matrix_name, W, get_data):
     D = []
 
-    if data_storred.check_data(matrix_name):
+    if get_data and data_storred.check_data(matrix_name):
         D = data_storred.get_data(matrix_name)
     else:
+        D = np.diag(W.sum(axis=1))
         regularization_term = 1e-5
 
-        D = np.diag(W.sum(axis=1))
         D = D + np.eye(D.shape[0]) * regularization_term
 
         D_data = pd.DataFrame(D)
-        D_data.to_csv("calculated_data/diagonal_matrix.csv")
+        D_data.to_csv(os.path.join("calculated_data", matrix_name))
 
     return D
 
 
-def calculate_regularized_laplacian_matrix(matrix_name, W, D):
+def calculate_regularized_laplacian_matrix(matrix_name, W, D, get_data):
     regularized_L = []
 
-    if data_storred.check_data(matrix_name):
+    if get_data and data_storred.check_data(matrix_name):
         regularized_L = data_storred.get_data(matrix_name)
     else:
         laplaican_matrix_L = D - W
@@ -170,22 +171,24 @@ def calculate_regularized_laplacian_matrix(matrix_name, W, D):
         regularized_L = np.dot(D_inv_sqrt, regularized_L)
 
         regularized_L_data = pd.DataFrame(regularized_L)
-        regularized_L_data.to_csv("calculated_data/regularized_laplacian_matrix.csv")
+        regularized_L_data.to_csv(os.path.join("calculated_data", matrix_name))
 
     return regularized_L
 
 
-def calculate_k_smallest_eigenvectors(matrix_name, eigenvalues, eigenvectors, k):
+def calculate_k_smallest_eigenvectors(
+    matrix_name, eigenvalues, eigenvectors, k, get_data
+):
     matrix_name = str(k) + "_" + matrix_name
 
     k_smallest_eig_V = []
 
-    if data_storred.check_data(matrix_name):
+    if get_data and data_storred.check_data(matrix_name):
         k_smallest_eig_V = data_storred.get_data(matrix_name)
     else:
         indexes = []
         for i in range(0, k):
-            min_element = min(eigenvalues)
+            min_element = np.amin(eigenvalues)
             print(min_element)
             idx = np.where(eigenvalues == min_element)[0][0]
             indexes.append(idx)
@@ -197,41 +200,52 @@ def calculate_k_smallest_eigenvectors(matrix_name, eigenvalues, eigenvectors, k)
         k_smallest_eig_V = np.transpose(k_smallest_eig_V)
 
         eig_V_data = pd.DataFrame(k_smallest_eig_V)
-        eig_V_data.to_csv("calculated_data/" + matrix_name)
+        eig_V_data.to_csv(os.path.join("calculated_data", matrix_name))
 
     return k_smallest_eig_V
 
 
-corr_matrix_R = calculate_corr_matrix("corr_matrix_R.csv")
+corr_matrix_R = calculate_corr_matrix("corr_matrix_R.csv", DATA_STATE)
 
-WMD_matrix = calculate_WMD("WMD_matrix.csv", corr_matrix_R)
+WMD_matrix = calculate_WMD("WMD_matrix.csv", corr_matrix_R, DATA_STATE)
 
 similarity_matrix_W = calculate_similarity_matrix(
-    "similarity_matrix_W.csv", WMD_matrix, 3
+    "similarity_matrix_W.csv", WMD_matrix, DATA_STATE, 3
 )
 
 diagonal_matrix_D = calculate_diagonal_matrix(
-    "diagonal_matrix_D.csv", similarity_matrix_W
+    "diagonal_matrix_D.csv", similarity_matrix_W, DATA_STATE
 )
 
 regularized_laplacian_matrix_L = calculate_regularized_laplacian_matrix(
-    "regularized_laplacian_matrix_L.csv", similarity_matrix_W, diagonal_matrix_D
+    "regularized_laplacian_matrix_L.csv",
+    similarity_matrix_W,
+    diagonal_matrix_D,
+    DATA_STATE,
 )
 
-eigenvalues_L, eigenvectors_L = np.linalg.eigh(regularized_laplacian_matrix_L)
+eigenvalues_L, eigenvectors_L = np.linalg.eig(regularized_laplacian_matrix_L)
+
+eigenvectors_L = np.real(eigenvectors_L)
+eigenvalues_L = np.real(eigenvalues_L)
+
+eigenvectors_L_data = pd.DataFrame(eigenvectors_L)
+eigenvectors_L_data.to_csv("calculated_data/eigenvectos_L.csv")
+
+num_clusters = 3
+
 
 eigenvectors_P = calculate_k_smallest_eigenvectors(
-    "eigenvector_matrix_P.csv", eigenvalues_L, eigenvectors_L, 3
+    "eigenvector_matrix_P.csv", eigenvalues_L, eigenvectors_L, num_clusters, DATA_STATE
 )
 
 X = eigenvectors_P
 
-kmeans = KMeans(n_clusters=4, random_state=2)
+kmeans = KMeans(n_clusters=num_clusters, random_state=2)
 kmeans.fit(X)
 
-print(kmeans.cluster_centers_)
-
-pred = kmeans.fit_predict(X)
+pred = kmeans.labels_
 
 cluster_prediction_data = pd.DataFrame(pred)
+cluster_prediction_data.rename(columns={0: "Labels"}, inplace=True)
 cluster_prediction_data.to_csv("calculated_data/cluster_prediction.csv")
