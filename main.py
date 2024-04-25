@@ -170,14 +170,19 @@ def calculate_regularized_laplacian_matrix(matrix_name, W, D, get_data):
         regularized_L = np.dot(laplaican_matrix_L, D_inv_sqrt)
         regularized_L = np.dot(D_inv_sqrt, regularized_L)
 
+        regularization_term = 1e-5
+        regularized_L = regularized_L + regularization_term * np.eye(
+            regularized_L.shape[0]
+        )
+
         regularized_L_data = pd.DataFrame(regularized_L)
         regularized_L_data.to_csv(os.path.join("calculated_data", matrix_name))
 
     return regularized_L
 
 
-def calculate_k_smallest_eigenvectors(
-    matrix_name, eigenvalues, eigenvectors, k, get_data
+def calculate_k_smallest_normalized_eigenvectors(
+    matrix_name, eigenvectors, k, get_data
 ):
     matrix_name = str(k) + "_" + matrix_name
 
@@ -186,21 +191,14 @@ def calculate_k_smallest_eigenvectors(
     if get_data and data_storred.check_data(matrix_name):
         k_smallest_eig_V = data_storred.get_data(matrix_name)
     else:
-        indexes = []
-        for i in range(0, k):
-            min_element = np.amin(eigenvalues)
-            print(min_element)
-            idx = np.where(eigenvalues == min_element)[0][0]
-            indexes.append(idx)
+        k_smallest_eig_V = eigenvectors[:, :k]
 
-            eigenvalues[idx] = math.inf
-            k_smallest_eig_V.append(eigenvectors[:, idx])
+        k_smallest_eig_V /= np.linalg.norm(k_smallest_eig_V, axis=1, keepdims=True)
 
-        k_smallest_eig_V = np.array(k_smallest_eig_V, dtype=np.float64)
-        k_smallest_eig_V = np.transpose(k_smallest_eig_V)
+        np.nan_to_num(k_smallest_eig_V, copy=False, nan=(1 / np.sqrt(3)))
 
-        eig_V_data = pd.DataFrame(k_smallest_eig_V)
-        eig_V_data.to_csv(os.path.join("calculated_data", matrix_name))
+        k_smallest_eig_V_data = pd.DataFrame(k_smallest_eig_V)
+        k_smallest_eig_V_data.to_csv(os.path.join("calculated_data", matrix_name))
 
     return k_smallest_eig_V
 
@@ -224,24 +222,22 @@ regularized_laplacian_matrix_L = calculate_regularized_laplacian_matrix(
     DATA_STATE,
 )
 
-eigenvalues_L, eigenvectors_L = np.linalg.eig(regularized_laplacian_matrix_L)
-
-eigenvectors_L = np.real(eigenvectors_L)
-eigenvalues_L = np.real(eigenvalues_L)
+eigenvalues_L, eigenvectors_L = np.linalg.eigh(regularized_laplacian_matrix_L)
 
 eigenvectors_L_data = pd.DataFrame(eigenvectors_L)
 eigenvectors_L_data.to_csv("calculated_data/eigenvectos_L.csv")
 
 num_clusters = 3
 
-
-eigenvectors_P = calculate_k_smallest_eigenvectors(
-    "eigenvector_matrix_P.csv", eigenvalues_L, eigenvectors_L, num_clusters, DATA_STATE
+eigenvectors_P = calculate_k_smallest_normalized_eigenvectors(
+    "eigenvectors_P.csv", eigenvectors_L, num_clusters, DATA_STATE
 )
 
 X = eigenvectors_P
 
-kmeans = KMeans(n_clusters=num_clusters, random_state=2)
+kmeans = KMeans(
+    n_clusters=num_clusters, init="k-means++", random_state=2, max_iter=300, tol=1e-1
+)
 kmeans.fit(X)
 
 pred = kmeans.labels_
