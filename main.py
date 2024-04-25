@@ -195,7 +195,7 @@ def calculate_k_smallest_normalized_eigenvectors(
 
         k_smallest_eig_V /= np.linalg.norm(k_smallest_eig_V, axis=1, keepdims=True)
 
-        np.nan_to_num(k_smallest_eig_V, copy=False, nan=(1 / np.sqrt(3)))
+        np.nan_to_num(k_smallest_eig_V, copy=False, nan=(1 / np.sqrt(k)))
 
         k_smallest_eig_V_data = pd.DataFrame(k_smallest_eig_V)
         k_smallest_eig_V_data.to_csv(os.path.join("calculated_data", matrix_name))

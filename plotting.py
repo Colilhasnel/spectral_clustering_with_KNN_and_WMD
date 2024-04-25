@@ -58,4 +58,4 @@ def plot_clusters(variable_1, variable_2, labels_file, k):
     plt.show()
 
 
-plot_clusters(VARIABLES[2], VARIABLES[3], "calculated_data/cluster_prediction.csv", 3)
+plot_clusters(VARIABLES[0], VARIABLES[-2], "calculated_data/cluster_prediction.csv", 3)
